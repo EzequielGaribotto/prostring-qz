@@ -1,0 +1,99 @@
+name: Test installers
+
+# Runs the real setup scripts (scripts/qz-tray-setup.sh and .ps1) on clean macOS, Windows and Linux
+# runners. These scripts had URLs that returned 404 and a certificate address that did not
+# answer, and nothing noticed because nothing ever ran them. A run checks that QZ Tray gets
+# installed, that ProString's certificate (override.crt) ends up next to it and equals the file
+# the app's install guide links to, and that QZ Tray starts listening.
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - scripts/**
+      - .github/workflows/test-installers.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-installers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Run the macOS setup script
+        env:
+          QZ_SETUP_NONINTERACTIVE: '1'
+        run: bash scripts/qz-tray-setup.sh
+
+      - name: QZ Tray, the certificate and the listening port are in place
+        run: |
+          test -d "/Applications/QZ Tray.app" || { echo "QZ Tray.app is missing"; exit 1; }
+          curl -fsSL -o "$RUNNER_TEMP/site.crt" https://prostringmanage.com/qz/override.crt
+          cmp "$RUNNER_TEMP/site.crt" "/Applications/QZ Tray.app/Contents/Resources/override.crt"
+          for i in $(seq 1 60); do nc -z 127.0.0.1 8182 && { echo "QZ Tray is listening after ${i}s"; exit 0; }; sleep 1; done
+          echo "QZ Tray did not open port 8182"; exit 1
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Run the Windows setup script
+        shell: pwsh
+        env:
+          QZ_SETUP_NONINTERACTIVE: '1'
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/qz-tray-setup.ps1
+          if ($LASTEXITCODE -ne 0) { throw "setup script exited with $LASTEXITCODE" }
+
+      - name: QZ Tray, the certificate and the listening port are in place
+        shell: pwsh
+        run: |
+          if (-not (Test-Path 'C:\Program Files\QZ Tray\qz-tray.exe')) { throw 'QZ Tray is missing' }
+          Invoke-WebRequest -Uri 'https://prostringmanage.com/qz/override.crt' -OutFile "$env:RUNNER_TEMP\site.crt"
+          $a = (Get-FileHash "$env:RUNNER_TEMP\site.crt").Hash
+          $b = (Get-FileHash 'C:\Program Files\QZ Tray\override.crt').Hash
+          if ($a -ne $b) { throw "override.crt differs from the site's ($a vs $b)" }
+          for ($i = 1; $i -le 60; $i++) {
+              try {
+                  $c = New-Object Net.Sockets.TcpClient
+                  if ($c.ConnectAsync('127.0.0.1', 8182).Wait(500)) { Write-Host "QZ Tray is listening after ${i}s"; exit 0 }
+              } catch { }
+              Start-Sleep -Seconds 1
+          }
+          throw 'QZ Tray did not open port 8182'
+
+  linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      # The runner has no desktop, so only the install and the certificate are checked here.
+      - name: Run the Linux setup script
+        env:
+          QZ_SETUP_NONINTERACTIVE: '1'
+        run: bash scripts/qz-tray-setup.sh
+
+      - name: QZ Tray and the certificate are in place
+        run: |
+          test -x /opt/qz-tray/qz-tray || { echo "/opt/qz-tray/qz-tray is missing"; ls -la /opt/qz-tray || true; exit 1; }
+          curl -fsSL -o "$RUNNER_TEMP/site.crt" https://prostringmanage.com/qz/override.crt
+          cmp "$RUNNER_TEMP/site.crt" /opt/qz-tray/override.crt
