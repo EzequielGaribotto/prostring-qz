@@ -78,8 +78,9 @@ if ! curl -fL -o "$TMP_CERT" "$CERTIFICATE_URL"; then
     rm -f "$TMP_CERT"
     exit 1
 fi
-# The QZ Tray folder belongs to root, so the copy needs sudo.
-if ! sudo cp "$TMP_CERT" "$CERT_DIR/override.crt"; then
+# The QZ Tray folder belongs to root, so the copy needs sudo. `install -m 644` makes the file readable
+# by QZ Tray (a plain copy of the private temp file would be root-only, and QZ would ignore it).
+if ! sudo install -m 644 "$TMP_CERT" "$CERT_DIR/override.crt"; then
     echo "Could not write $CERT_DIR/override.crt"
     rm -f "$TMP_CERT"
     exit 1
@@ -88,8 +89,13 @@ rm -f "$TMP_CERT"
 echo "Certificate installed in $CERT_DIR"
 
 echo "Restarting QZ Tray..."
-pkill -f "QZ Tray" || true
-pkill -f qz-tray || true
+# Match the process by what only QZ Tray has in its command line: matching "qz-tray" would also kill
+# this script (qz-tray-setup.sh). The Linux installer starts QZ Tray as root, hence sudo there.
+if [ "$OS_TYPE" = "Darwin" ]; then
+    pkill -f "QZ Tray.app" || true
+else
+    sudo pkill -f "qz-tray.jar" || true
+fi
 sleep 2
 
 if [ "$OS_TYPE" = "Darwin" ]; then
