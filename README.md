@@ -39,6 +39,43 @@ Or go to [Releases](../../releases/) to see all versions.
 
 
 
+## 🍎 macOS: "Apple could not verify... is free of malware"
+
+The installer isn't notarized by Apple, so Gatekeeper blocks it by default the first time. Two options:
+
+### Option A — Allow it and run the installer (recommended)
+
+1. Right-click (or Control-click) `install-qz-tray-macos` → **Open** (do NOT double-click)
+2. In the dialog, click **Open** again — this is different from the "Not Opened" popup you get from double-clicking, and only appears via right-click → Open
+3. If you already dismissed it with "Done"/"Move to Bin" instead: go to **System Settings → Privacy & Security**, scroll down to the Security section, and click **"Open Anyway"** next to the message about `install-qz-tray-macos`, then confirm
+4. Once allowed once, run it from Terminal:
+   ```bash
+   cd ~/Downloads
+   chmod +x install-qz-tray-macos
+   ./install-qz-tray-macos
+   ```
+5. Enter your password when prompted → Done!
+
+### Option B — Manual installation (no installer binary at all)
+
+If you'd rather not run the unsigned binary, do exactly what it automates:
+
+1. **Install QZ Tray itself** (official, signed by QZ Industries):
+   - Download: [qz-tray-2.2.6-macos.dmg](https://github.com/qzind/tray/releases/download/v2.2.6/qz-tray-2.2.6-macos.dmg)
+   - Open the `.dmg` and drag **QZ Tray.app** into **Applications**
+2. **Install the ProString certificate:**
+   - Download: [override.crt](https://prostringmanage.com/qz/override.crt)
+   - Move/copy it into: `/Applications/QZ Tray.app/Contents/Resources/override.crt`
+     ```bash
+     cp ~/Downloads/override.crt "/Applications/QZ Tray.app/Contents/Resources/override.crt"
+     ```
+3. **Start QZ Tray:**
+   - Open it from Applications (right-click → Open the first time, same Gatekeeper step as above, since QZ Tray itself is also unsigned for direct download)
+   - Look for the printer icon in the menu bar
+4. **Connect ProString:** Settings → Printer Settings → **Reconnect**, then accept the one-time authorization prompt
+
+---
+
 ## After that
 
 1. **Verify**
