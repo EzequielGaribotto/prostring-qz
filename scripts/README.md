@@ -55,6 +55,8 @@ Output:
 - `dist/install-qz-tray-macos` — macOS
 - `dist/install-qz-tray-linux` — Linux
 
+Upload these to a GitHub Release (the app downloads the latest release assets); `dist/` is not committed.
+
 ### Build Single Platform
 ```bash
 npm run build:win     # Windows only

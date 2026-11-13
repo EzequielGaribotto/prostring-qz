@@ -17,7 +17,8 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Build artifacts (except dist which has the final executables)
+# Build artifacts (installers are built locally and published as GitHub Release assets, never committed)
+scripts/dist/
 .cache/
 
 # Editor

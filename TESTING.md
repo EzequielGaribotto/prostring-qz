@@ -20,7 +20,7 @@ You need to test on at least one machine per OS, or use VMs:
 - [ ] Admin/sudo rights available
 - [ ] Internet connection
 - [ ] ProString accessible at your test domain
-- [ ] Certificate accessible at `https://stringjobs.prostringshop.es/qz/override.crt`
+- [ ] Certificate accessible at `https://prostringmanage.com/qz/override.crt`
 
 ---
 
@@ -82,7 +82,7 @@ ls -la install-qz-tray-win.exe
 
 ### Phase 4: Test with ProString
 
-1. **Open ProString** at `https://stringjobs.prostringshop.es`
+1. **Open ProString** at `https://app.prostringmanage.com`
 2. **Go to:** Settings → Printer Settings
 3. **Check QZ connection:**
    - [ ] Green dot appears next to "QZ Tray: connected"
@@ -172,7 +172,7 @@ file install-qz-tray-macos
 
 ### Phase 4: Test with ProString
 
-1. **Open ProString** at `https://stringjobs.prostringshop.es`
+1. **Open ProString** at `https://app.prostringmanage.com`
 2. **Go to:** Settings → Printer Settings
 3. **Check QZ connection:**
    - [ ] Green dot appears next to "QZ Tray: connected"
@@ -266,7 +266,7 @@ file install-qz-tray-linux
 
 ### Phase 4: Test with ProString
 
-1. **Open ProString** at `https://stringjobs.prostringshop.es`
+1. **Open ProString** at `https://app.prostringmanage.com`
 2. **Go to:** Settings → Printer Settings
 3. **Check QZ connection:**
    - [ ] Green dot appears next to "QZ Tray: connected"
@@ -304,7 +304,7 @@ which qz-tray
 For each OS, verify the certificate matches:
 
 ```
-Expected: https://stringjobs.prostringshop.es/qz/override.crt
+Expected: https://prostringmanage.com/qz/override.crt
 Content should start with: -----BEGIN CERTIFICATE-----
 And contain: "ProString" subject
 ```
@@ -316,7 +316,7 @@ And contain: "ProString" subject
 ### Network/Connectivity (All OS)
 
 - [ ] Installer can reach `https://qz.io/` (download QZ Tray)
-- [ ] Installer can reach `https://stringjobs.prostringshop.es/qz/override.crt`
+- [ ] Installer can reach `https://prostringmanage.com/qz/override.crt`
 - [ ] ProString can reach QZ Tray (green dot shows)
 - [ ] ProString Settings page loads without errors
 
