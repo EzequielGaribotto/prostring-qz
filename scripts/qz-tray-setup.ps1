@@ -26,6 +26,18 @@ $CertSha256 = "cb277265a6afb2536c87c6ca76bf44da63ecb6dd1ba99d0c40ef980bbdcfda04"
 
 $ErrorActionPreference = "Stop"
 
+# A failure keeps the window open with what to do next: run elevated, this script has its own window, which used to
+# close at once on an error.
+function Stop-Setup {
+    Write-Host "`nQZ Tray was NOT installed. Take a screenshot of this window and send it to ProString support," -ForegroundColor Red
+    Write-Host "or install it by hand: in ProString, Settings > Printer > Install QZ Tray > manual installation." -ForegroundColor Red
+    if ($env:QZ_SETUP_NONINTERACTIVE -ne "1") {
+        Write-Host "`nPress any key to exit..." -ForegroundColor Gray
+        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    }
+    exit 1
+}
+
 # Check if running as administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
 
@@ -39,7 +51,7 @@ if (-not $isAdmin) {
         Start-Process powershell.exe -Verb RunAs -ArgumentList @("-File", $scriptPath) + $args
     } else {
         Write-Host "Error: Unable to elevate privileges" -ForegroundColor Red
-        exit 1
+        Stop-Setup
     }
     exit 0
 }
@@ -52,7 +64,7 @@ if (-not (Test-Path $qzTrayPath)) {
     $expected = $PinnedSha256[$file]
     if (-not $expected -and $env:QZ_ALLOW_UNPINNED -ne "1") {
         Write-Host "No pinned checksum for $($file): refusing to install it." -ForegroundColor Red
-        exit 1
+        Stop-Setup
     }
     Write-Host "Downloading QZ Tray $QzBuild ($file)..." -ForegroundColor Yellow
     $tmpExe = Join-Path $env:TEMP ("qz-tray-" + [guid]::NewGuid().ToString("N") + ".exe")
@@ -65,7 +77,7 @@ if (-not (Test-Path $qzTrayPath)) {
             if ($actual -ne $expected) {
                 Remove-Item $tmpExe -Force -ErrorAction SilentlyContinue
                 Write-Host "Checksum mismatch for $($file): expected $expected, got $actual. Not installing." -ForegroundColor Red
-                exit 1
+                Stop-Setup
             }
             Write-Host "Checksum OK" -ForegroundColor Green
         }
@@ -77,7 +89,7 @@ if (-not (Test-Path $qzTrayPath)) {
         Write-Host "QZ Tray installed" -ForegroundColor Green
     } catch {
         Write-Host "Download failed: $_" -ForegroundColor Red
-        exit 1
+        Stop-Setup
     }
 } else {
     Write-Host "QZ Tray already installed" -ForegroundColor Green
@@ -98,7 +110,7 @@ try {
     $web.DownloadFile($CertificateUrl, $tmpCert)
 } catch {
     Write-Host "Certificate download failed: $_" -ForegroundColor Red
-    exit 1
+    Stop-Setup
 }
 # Only ProString's own certificate is accepted from the default address (its SHA-256 fingerprint).
 if ($CertificateUrl -eq "https://prostringmanage.com/qz/override.crt") {
@@ -110,7 +122,7 @@ if ($CertificateUrl -eq "https://prostringmanage.com/qz/override.crt") {
     if ($fp -ne $CertSha256) {
         Remove-Item $tmpCert -Force -ErrorAction SilentlyContinue
         Write-Host "The downloaded certificate is not ProString's certificate. Not installing it." -ForegroundColor Red
-        exit 1
+        Stop-Setup
     }
 }
 Move-Item -Path $tmpCert -Destination $certPath -Force

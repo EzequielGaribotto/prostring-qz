@@ -15,6 +15,21 @@ console.log('╚═════════════════════�
 console.log(`Platform: ${platform} (${arch})`)
 console.log(`Node.js: ${process.version}\n`)
 
+// Every failure ends here: the window stays open with what went wrong and what to do next. Double-clicked, the
+// installer runs in its own console window, which used to close at once on an error (a user saw the terminal open
+// and close, with QZ Tray not installed).
+function fail(message) {
+  console.error(`\n❌ QZ Tray was NOT installed: ${message}\n`)
+  console.error('What to do:')
+  console.error('  1. Take a screenshot of this window and send it to ProString support.')
+  console.error('  2. Or install it by hand: in ProString, Settings > Printer > Install QZ Tray > manual installation.')
+  console.error('     Steps also at https://github.com/EzequielGaribotto/prostring-qz#-manual-installation-no-installer-at-all\n')
+  if (platform === 'win32' && process.env.QZ_SETUP_NONINTERACTIVE !== '1') {
+    try { execSync('pause', { stdio: 'inherit', shell: 'cmd.exe' }) } catch { /* no console */ }
+  }
+  process.exit(1)
+}
+
 async function main() {
   try {
     if (platform === 'win32') {
@@ -24,13 +39,11 @@ async function main() {
     } else if (platform === 'linux') {
       await installLinux()
     } else {
-      console.error(`❌ Unsupported platform: ${platform}`)
-      process.exit(1)
+      fail(`unsupported system: ${platform}`)
     }
 
   } catch (err) {
-    console.error(`\n❌ Installation failed: ${err.message}\n`)
-    process.exit(1)
+    fail(err.message)
   }
 }
 
@@ -40,9 +53,7 @@ async function installWindows() {
   try {
     execSync('net session', { stdio: 'ignore' })
   } catch (e) {
-    console.error('❌ This script must be run as Administrator')
-    console.error('   Right-click Command Prompt or PowerShell and select "Run as administrator"\n')
-    process.exit(1)
+    fail('the installer needs administrator rights. Right-click install-qz-tray-win.exe and choose "Run as administrator".')
   }
 
   console.log('Running PowerShell installer...\n')
@@ -57,10 +68,11 @@ async function installWindows() {
   try {
     execSync(
       `powershell -ExecutionPolicy Bypass -File "${scriptPath}"`,
-      { stdio: 'inherit', shell: 'powershell.exe' }
+      // This window pauses on its own (fail() or the end below): the script must not wait for a key too.
+      { stdio: 'inherit', shell: 'powershell.exe', env: { ...process.env, QZ_SETUP_NONINTERACTIVE: '1' } }
     )
   } catch (err) {
-    throw new Error('PowerShell installation failed')
+    throw new Error('the setup script stopped (its message is above)')
   }
 
   console.log('\nPress any key to exit...')
@@ -94,6 +106,5 @@ async function installLinux() {
 }
 
 main().catch((err) => {
-  console.error(`\n❌ Error: ${err.message}\n`)
-  process.exit(1)
+  fail(err.message)
 })
