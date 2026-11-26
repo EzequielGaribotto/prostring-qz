@@ -1,0 +1,2 @@
+# The shell installers run on macOS / Linux: never CRLF, even from a Windows checkout.
+*.sh text eol=lf

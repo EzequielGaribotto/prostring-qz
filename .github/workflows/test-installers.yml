@@ -97,3 +97,32 @@ jobs:
           test -x /opt/qz-tray/qz-tray || { echo "/opt/qz-tray/qz-tray is missing"; ls -la /opt/qz-tray || true; exit 1; }
           curl -fsSL -o "$RUNNER_TEMP/site.crt" https://prostringmanage.com/qz/override.crt
           cmp "$RUNNER_TEMP/site.crt" /opt/qz-tray/override.crt
+
+  # A swapped or re-published QZ file must not be installed: a wrong pinned checksum and a file with
+  # no pinned checksum both stop the script before anything runs as root.
+  checksum-refused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: A wrong checksum is refused
+        env:
+          QZ_SETUP_NONINTERACTIVE: '1'
+        run: |
+          sed 's/7860322099e83b36a3d6db59a5c1a406dfb8749b15ac78c1f67744dd207e9bde/0000000000000000000000000000000000000000000000000000000000000000/' scripts/qz-tray-setup.sh > "$RUNNER_TEMP/wrong.sh"
+          if bash "$RUNNER_TEMP/wrong.sh" > "$RUNNER_TEMP/out.txt" 2>&1; then cat "$RUNNER_TEMP/out.txt"; echo "it installed"; exit 1; fi
+          cat "$RUNNER_TEMP/out.txt"
+          grep -q "Checksum mismatch" "$RUNNER_TEMP/out.txt"
+          test ! -e /opt/qz-tray || { echo "/opt/qz-tray exists"; exit 1; }
+
+      - name: A file with no pinned checksum is refused
+        env:
+          QZ_SETUP_NONINTERACTIVE: '1'
+          QZ_TRAY_VERSION: '2.2.6'
+        run: |
+          if bash scripts/qz-tray-setup.sh > "$RUNNER_TEMP/out.txt" 2>&1; then cat "$RUNNER_TEMP/out.txt"; echo "it installed"; exit 1; fi
+          cat "$RUNNER_TEMP/out.txt"
+          grep -q "No pinned checksum" "$RUNNER_TEMP/out.txt"

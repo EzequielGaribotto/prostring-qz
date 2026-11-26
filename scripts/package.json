@@ -7,18 +7,16 @@
     "qz-tray-installer": "./installer.js"
   },
   "scripts": {
-    "build": "pkg installer.js --targets node16-win-x64,node16-macos-x64,node16-linux-x64 -o dist/install-qz-tray --assets qz-tray-setup.ps1 --assets qz-tray-setup.sh",
+    "build": "npm run build:win && npm run build:sh",
     "build:win": "pkg installer.js --targets node16-win-x64 -o dist/install-qz-tray-win.exe --assets qz-tray-setup.ps1",
-    "build:macos": "pkg installer.js --targets node16-macos-x64 -o dist/install-qz-tray-macos --assets qz-tray-setup.sh",
-    "build:linux": "pkg installer.js --targets node16-linux-x64 -o dist/install-qz-tray-linux --assets qz-tray-setup.sh"
+    "build:sh": "node -e \"const fs=require('fs');fs.mkdirSync('dist',{recursive:true});for(const os of ['macos','linux'])fs.copyFileSync('qz-tray-setup.sh','dist/install-qz-tray-'+os)\""
   },
   "devDependencies": {
     "pkg": "^5.6.0"
   },
   "pkg": {
     "assets": [
-      "qz-tray-setup.ps1",
-      "qz-tray-setup.sh"
+      "qz-tray-setup.ps1"
     ]
   }
 }
